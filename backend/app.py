@@ -52,6 +52,7 @@ def signup():
         return jsonify({'message': 'User created successfully'}), 201
 
     except Exception as e:
+        print('Signup error:', str(e))
         return jsonify({'error': str(e)}), 500
 
 @app.route('/login', methods=['POST'])
@@ -77,6 +78,7 @@ def login():
             return jsonify({'error': 'Invalid email or password'}), 401
 
     except Exception as e:
+        print('Login error:', str(e))
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

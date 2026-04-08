@@ -14,7 +14,8 @@ const Login = () => {
             alert(response.data.message);
             navigate('/home');
         } catch (error) {
-            alert(error.response?.data?.error || 'An error occurred');
+            console.error('Login error', error);
+            alert(error.response?.data?.error || error.message || 'An error occurred');
         }
     };
 

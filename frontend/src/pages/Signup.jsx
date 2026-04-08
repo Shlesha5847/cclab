@@ -15,7 +15,8 @@ const Signup = () => {
             alert(response.data.message);
             navigate('/login');
         } catch (error) {
-            alert(error.response?.data?.error || 'An error occurred');
+            console.error('Signup error', error);
+            alert(error.response?.data?.error || error.message || 'An error occurred');
         }
     };
 
