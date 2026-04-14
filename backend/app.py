@@ -8,6 +8,10 @@ import os
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 
+# 🔹 JWT imports
+import jwt
+import datetime
+
 # Load environment variables
 load_dotenv()
 
@@ -17,6 +21,7 @@ CORS(app)
 # 🔹 ENV VARIABLES
 mongo_uri = os.getenv('MONGO_URI')
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+SECRET_KEY = os.getenv('SECRET_KEY', 'secret')
 
 if not mongo_uri:
     raise ValueError("MONGO_URI not found in environment variables")
@@ -25,6 +30,16 @@ if not mongo_uri:
 client = MongoClient(mongo_uri)
 db = client['app']
 users = db['users']
+
+
+# =========================
+# 🔹 HELPER: CREATE TOKEN
+# =========================
+def create_token(email):
+    return jwt.encode({
+        'email': email,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }, SECRET_KEY, algorithm='HS256')
 
 
 # =========================
@@ -58,7 +73,7 @@ def signup():
 
 
 # =========================
-# 🔹 LOGIN ROUTE
+# 🔹 LOGIN ROUTE (JWT ADDED)
 # =========================
 @app.route('/login', methods=['POST'])
 def login():
@@ -73,7 +88,8 @@ def login():
         user = users.find_one({'email': email, 'password': password})
 
         if user:
-            return jsonify({'success': True}), 200
+            token = create_token(email)
+            return jsonify({'token': token}), 200
         else:
             return jsonify({'error': 'Invalid credentials'}), 401
 
@@ -83,14 +99,13 @@ def login():
 
 
 # =========================
-# 🔹 GOOGLE LOGIN ROUTE
+# 🔹 GOOGLE LOGIN ROUTE (JWT ADDED)
 # =========================
 @app.route('/auth/google', methods=['POST'])
 def google_login():
     try:
         token = request.json.get('token')
 
-        # Verify token with Google
         idinfo = id_token.verify_oauth2_token(
             token,
             grequests.Request(),
@@ -100,21 +115,45 @@ def google_login():
         email = idinfo['email']
         name = idinfo.get('name')
 
-        # Check if user exists
         user = users.find_one({'email': email})
 
         if not user:
             users.insert_one({
                 'name': name,
                 'email': email,
-                'password': None  # No password for Google users
+                'password': None
             })
 
-        return jsonify({'success': True, 'email': email}), 200
+        jwt_token = create_token(email)
+
+        return jsonify({'token': jwt_token}), 200
 
     except Exception as e:
         print('Google login error:', str(e))
         return jsonify({'error': 'Invalid Google token'}), 401
+
+
+# =========================
+# 🔹 PROTECTED ROUTE (TEST SSO)
+# =========================
+@app.route('/profile', methods=['GET'])
+def profile():
+    try:
+        auth_header = request.headers.get('Authorization')
+
+        if not auth_header:
+            return jsonify({'error': 'Token missing'}), 401
+
+        token = auth_header.split(" ")[1]
+
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+
+        user = users.find_one({'email': decoded['email']}, {'_id': 0})
+
+        return jsonify({'user': user}), 200
+
+    except Exception as e:
+        return jsonify({'error': 'Invalid or expired token'}), 401
 
 
 # =========================
