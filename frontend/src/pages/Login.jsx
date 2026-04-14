@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -8,28 +9,45 @@ const Login = () => {
     const [errorMsg, setErrorMsg] = useState('');
     const navigate = useNavigate();
 
+    // 🔹 Normal login
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMsg('');
 
         try {
-            const response = await axios.post('http://100.55.84.181:5000/login', {
+            await axios.post('http://100.55.84.181:5000/login', {
                 email,
                 password
             });
 
-            // No alert — just navigate
             navigate('/home');
 
         } catch (error) {
             console.error('Login error', error);
 
-            // Show error in UI instead of alert
             setErrorMsg(
                 error.response?.data?.error ||
                 error.message ||
                 'Login failed'
             );
+        }
+    };
+
+    // 🔹 Google login
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const res = await axios.post(
+                'http://100.55.84.181:5000/auth/google',
+                { token: credentialResponse.credential }
+            );
+
+            if (res.data.success) {
+                navigate('/home');
+            }
+
+        } catch (error) {
+            console.error('Google login error', error);
+            setErrorMsg('Google login failed');
         }
     };
 
@@ -44,6 +62,7 @@ const Login = () => {
                 </p>
             )}
 
+            {/* 🔹 Normal Login */}
             <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '10px' }}>
                     <input
@@ -72,7 +91,20 @@ const Login = () => {
                 </button>
             </form>
 
-            {/* Signup Option */}
+            {/* 🔹 Divider */}
+            <div style={{ textAlign: 'center', margin: '15px 0' }}>
+                <p>OR</p>
+            </div>
+
+            {/* 🔹 Google Login */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setErrorMsg('Google login failed')}
+                />
+            </div>
+
+            {/* 🔹 Signup Option */}
             <p style={{ marginTop: '15px', textAlign: 'center' }}>
                 Not registered?{' '}
                 <Link to="/signup" style={{ color: 'blue', textDecoration: 'underline' }}>
