@@ -15,10 +15,13 @@ const Login = () => {
         setErrorMsg('');
 
         try {
-            await axios.post('http://100.55.84.181:5000/login', {
+            const res = await axios.post('http://100.55.84.181:5000/login', {
                 email,
                 password
             });
+
+            // ✅ STORE TOKEN (IMPORTANT)
+            localStorage.setItem("token", res.data.token);
 
             navigate('/home');
 
@@ -41,9 +44,10 @@ const Login = () => {
                 { token: credentialResponse.credential }
             );
 
-            if (res.data.success) {
-                navigate('/home');
-            }
+            // ✅ STORE TOKEN
+            localStorage.setItem("token", res.data.token);
+
+            navigate('/home');
 
         } catch (error) {
             console.error('Google login error', error);
