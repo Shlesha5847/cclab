@@ -15,7 +15,7 @@ const Login = () => {
         setErrorMsg('');
 
         try {
-            const res = await axios.post('http://100.55.84.181:5000/login', {
+            const res = await axios.post('/api/login', {
                 email,
                 password
             });
@@ -40,7 +40,7 @@ const Login = () => {
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
             const res = await axios.post(
-                'http://100.55.84.181:5000/auth/google',
+                '/api/auth/google',
                 { token: credentialResponse.credential }
             );
 

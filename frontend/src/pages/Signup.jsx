@@ -18,7 +18,7 @@ const Signup = () => {
 
         try {
             const response = await axios.post(
-                'http://100.55.84.181:5000/signup',
+                '/api/signup',
                 { name, email, password }
             );
 
